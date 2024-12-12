@@ -1,0 +1,27 @@
+[tools]
+node = "22.1.0"
+java = "17.0.2"
+yq = "4.44.2"
+android-sdk = "13.0"
+
+# Expo Builds
+# npm install eas-cli --save-dev
+
+# Android Builds
+#
+# mise plugins install android-sdk https://github.com/Syquel/mise-android-sdk.git
+# sdkmanager --install "platforms;android-25"
+# sdkmanager --install "build-tools;25.0.2"
+# sdkmanager --install "system-images;android-30;google_apis_playstore;arm64-v8a"
+# sdkmanager --install "emulator"
+# sdkmanager --install "platform-tools"
+# sdkmanager --licenses
+# avdmanager list device
+# avdmanager create avd -n my_avd -k "system-images;android-30;google_apis_playstore;arm64-v8a" -d pixel_4
+# $ANDROID_HOME/emulator/emulator -avd my_avd
+# 
+# Run locally
+# npx expo run:android
+#
+# Build locally
+# npx eas build --platform android --local
