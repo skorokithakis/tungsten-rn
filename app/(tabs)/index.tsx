@@ -8,6 +8,8 @@ import {
   Pressable,
   Alert,
   ScrollView,
+  Modal,
+  TextInput,
 } from "react-native";
 import { parseScreenConfig } from "../../src/services/yaml/parser";
 import { Toast } from "../../src/components/Toast";
@@ -28,6 +30,8 @@ const HomeScreen: React.FC = () => {
     message: "",
     type: "success",
   });
+  const [importModalVisible, setImportModalVisible] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
   const { state, dispatch } = useScreens();
   const currentScreen = state.screens[state.currentScreenIndex];
 
@@ -67,58 +71,6 @@ const HomeScreen: React.FC = () => {
       console.error("Button press failed:", error);
     }
   };
-
-  if (!currentScreen) {
-    return (
-      <ThemedView style={styles.container}>
-        <View style={styles.emptyStateContainer}>
-          <ThemedText style={styles.emptyStateText}>
-            There are no screens configured. Press 'Add Screen' to download a YAML configuration file.
-          </ThemedText>
-        </View>
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => {
-              Alert.prompt(
-                "Import Screen",
-                "Enter YAML URL to import:",
-                [
-                  {
-                    text: "Cancel",
-                    style: "cancel",
-                  },
-                  {
-                    text: "Import",
-                    onPress: (url?: string) => {
-                      if (url) {
-                        parseScreenConfig(url)
-                          .then((screens) => {
-                            screens.forEach((screen) =>
-                              dispatch({ type: "ADD_SCREEN", screen })
-                            );
-                            showToast(
-                              "Screen imported successfully",
-                              "success"
-                            );
-                          })
-                          .catch((error) => {
-                            showToast(error.message, "error");
-                          });
-                      }
-                    },
-                  },
-                ],
-                "plain-text"
-              );
-            }}
-          >
-            <ThemedText>Add Screen</ThemedText>
-          </TouchableOpacity>
-        </View>
-      </ThemedView>
-    );
-  }
 
   const renderScreen = ({
     item: screen,
@@ -170,8 +122,10 @@ const HomeScreen: React.FC = () => {
   );
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView
+    <>
+      {currentScreen ? (
+        <ThemedView style={styles.container}>
+          <ScrollView
         horizontal
         style={styles.tabBar}
         showsHorizontalScrollIndicator={false}
@@ -238,34 +192,7 @@ const HomeScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => {
-            Alert.prompt(
-              "Import Screen",
-              "Enter YAML URL to import:",
-              [
-                {
-                  text: "Cancel",
-                  style: "cancel",
-                },
-                {
-                  text: "Import",
-                  onPress: (url?: string) => {
-                    if (url) {
-                      parseScreenConfig(url)
-                        .then((screens) => {
-                          screens.forEach((screen) =>
-                            dispatch({ type: "ADD_SCREEN", screen })
-                          );
-                          showToast("Screen imported successfully", "success");
-                        })
-                        .catch((error) => {
-                          showToast(error.message, "error");
-                        });
-                    }
-                  },
-                },
-              ],
-              "plain-text"
-            );
+            setImportModalVisible(true);
           }}
         >
           <ThemedText>Add Screen</ThemedText>
@@ -288,7 +215,132 @@ const HomeScreen: React.FC = () => {
           <ThemedText style={styles.deleteButtonText}>Delete</ThemedText>
         </TouchableOpacity>
       </View>
-    </ThemedView>
+
+      {importModalVisible && (
+        <Modal
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setImportModalVisible(false)}
+        >
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
+            <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 8, width: "80%" }}>
+              <TextInput
+                style={{ borderColor: "#ccc", borderWidth: 1, padding: 10, marginBottom: 10 }}
+                placeholder="Enter YAML URL"
+                value={importUrl}
+                onChangeText={setImportUrl}
+              />
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setImportModalVisible(false);
+                    setImportUrl("");
+                  }}
+                  style={{ padding: 10 }}
+                >
+                  <ThemedText style={{ color: "#000000" }}>Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (importUrl.trim()) {
+                      try {
+                        const screens = await parseScreenConfig(importUrl);
+                        screens.forEach((screen) =>
+                          dispatch({ type: "ADD_SCREEN", screen })
+                        );
+                        showToast("Screen imported successfully", "success");
+                      } catch (error) {
+                        showToast(
+                          error instanceof Error ? error.message : "Import failed",
+                          "error"
+                        );
+                      }
+                      setImportModalVisible(false);
+                      setImportUrl("");
+                    }
+                  }}
+                  style={{ padding: 10 }}
+                >
+                  <ThemedText style={{ color: "#000000" }}>Import</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+        </ThemedView>
+      ) : (
+        <ThemedView style={styles.container}>
+          <View style={styles.emptyStateContainer}>
+            <ThemedText style={styles.emptyStateText}>
+              There are no screens configured. Press 'Add Screen' to download a YAML configuration file.
+            </ThemedText>
+          </View>
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => {
+                setImportModalVisible(true);
+              }}
+            >
+              <ThemedText>Add Screen</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </ThemedView>
+      )}
+      {importModalVisible && (
+        <Modal
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setImportModalVisible(false)}
+        >
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
+            <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 8, width: "80%" }}>
+              <TextInput
+                style={{ borderColor: "#ccc", borderWidth: 1, padding: 10, marginBottom: 10 }}
+                placeholder="Enter YAML URL"
+                value={importUrl}
+                onChangeText={setImportUrl}
+              />
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setImportModalVisible(false);
+                    setImportUrl("");
+                  }}
+                  style={{ padding: 10 }}
+                >
+                  <ThemedText style={{ color: "#000000" }}>Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (importUrl.trim()) {
+                      try {
+                        const screens = await parseScreenConfig(importUrl);
+                        screens.forEach((screen) =>
+                          dispatch({ type: "ADD_SCREEN", screen })
+                        );
+                        showToast("Screen imported successfully", "success");
+                      } catch (error) {
+                        showToast(
+                          error instanceof Error ? error.message : "Import failed",
+                          "error"
+                        );
+                      }
+                      setImportModalVisible(false);
+                      setImportUrl("");
+                    }
+                  }}
+                  style={{ padding: 10 }}
+                >
+                  <ThemedText style={{ color: "#000000" }}>Import</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </>
   );
 };
 
@@ -306,7 +358,7 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: "#A1CEDC20",
     paddingTop: 50, // Space for status bar
-    maxHeight: 80, // Add maximum height
+    maxHeight: 100, // Increased maxHeight gives more space
   },
   tabBarContent: {
     paddingHorizontal: 12,
@@ -316,10 +368,9 @@ const styles = StyleSheet.create({
   },
   tab: {
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 8,
     marginRight: 6,
     borderRadius: 12,
-    height: 24,
     marginTop: 2,
     justifyContent: "center",
   },
