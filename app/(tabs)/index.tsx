@@ -80,7 +80,6 @@ const HomeScreen: React.FC = () => {
     index: number;
   }) => (
     <View style={styles.screenContainer}>
-      <ThemedText type="title">{screen.title}</ThemedText>
       <View style={styles.buttonGrid}>
         {currentScreen.ui.map((button, index) => {
           return button.label ? (
