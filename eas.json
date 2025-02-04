@@ -3,6 +3,14 @@
     "version": ">= 10.2.1"
   },
   "build": {
+    "standalone_apk": {
+      "android": {
+        "image": "latest",
+        "developmentClient": false,
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "distribution": "internal"
+    },
     "development": {
       "developmentClient": true,
       "distribution": "internal"
