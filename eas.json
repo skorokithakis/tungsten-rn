@@ -1,26 +1,27 @@
 {
-  "cli": {
-    "version": ">= 10.2.1"
-  },
-  "build": {
-    "standalone_apk": {
-      "android": {
-        "image": "latest",
-        "developmentClient": false,
-        "gradleCommand": ":app:assembleRelease"
-      },
-      "distribution": "internal"
+    "cli": {
+        "appVersionSource": "remote",
+        "version": ">= 10.2.1"
     },
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
+    "build": {
+        "standalone_apk": {
+            "android": {
+                "image": "latest",
+                "developmentClient": false,
+                "gradleCommand": ":app:assembleRelease"
+            },
+            "distribution": "internal"
+        },
+        "development": {
+            "developmentClient": true,
+            "distribution": "internal"
+        },
+        "preview": {
+            "distribution": "internal"
+        },
+        "production": {}
     },
-    "preview": {
-      "distribution": "internal"
-    },
-    "production": {}
-  },
-  "submit": {
-    "production": {}
-  }
+    "submit": {
+        "production": {}
+    }
 }
