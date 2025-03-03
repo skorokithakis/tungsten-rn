@@ -3,13 +3,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Dimensions,
   View,
   Pressable,
   Alert,
   ScrollView,
   Modal,
   TextInput,
+  useWindowDimensions,
 } from "react-native";
 import { parseScreenConfig } from "../../src/services/yaml/parser";
 import { Toast } from "../../src/components/Toast";
@@ -17,9 +17,17 @@ import { useScreens } from "../../src/stores/screensStore";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import client from "../../src/services/client";
+import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  runOnJS
+} from 'react-native-reanimated';
 
-const { width } = Dimensions.get("window");
 const HomeScreen: React.FC = () => {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
   const flatListRef = useRef<FlatList>(null);
   const [toast, setToast] = useState<{
     visible: boolean;
@@ -34,6 +42,7 @@ const HomeScreen: React.FC = () => {
   const [importUrl, setImportUrl] = useState("");
   const { state, dispatch } = useScreens();
   const currentScreen = state.screens[state.currentScreenIndex];
+  const translateX = useSharedValue(0);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ visible: true, message, type });
@@ -52,53 +61,219 @@ const HomeScreen: React.FC = () => {
     }
   };
 
+  const handleScreenChange = (direction: 'left' | 'right') => {
+    const newIndex = direction === 'left'
+      ? Math.min(state.currentScreenIndex + 1, state.screens.length - 1)
+      : Math.max(state.currentScreenIndex - 1, 0);
+
+    dispatch({ type: "SET_CURRENT_SCREEN", index: newIndex });
+  };
+
+  const gesture = Gesture.Pan()
+    .onUpdate((e) => {
+      translateX.value = e.translationX;
+    })
+    .onEnd((e) => {
+      // Reduce threshold in landscape mode
+      const threshold = isLandscape ? width * 0.05 : width * 0.2; // 10% in landscape, 20% in portrait
+      if (Math.abs(e.translationX) > threshold) {
+        if (e.translationX > 0) {
+          // Swipe right
+          runOnJS(handleScreenChange)('right');
+        } else {
+          // Swipe left
+          runOnJS(handleScreenChange)('left');
+        }
+      }
+      translateX.value = withSpring(0);
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
   const renderScreen = ({
     item: screen,
     index,
   }: {
     item: Screen;
     index: number;
-  }) => (
-    <View style={[styles.screenContainer, { width: '100%' }]}>
-      <View style={styles.buttonGrid}>
-        {screen.ui.map((button, index) => {
-          return button.label ? (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.button,
-                {
-                  width: `${(button.span / 6) * 100 - 0.5}%`,
-                  margin: "0.25%",
-                },
-              ]}
-              onPress={() => handleButtonPress(button.url)}
-            >
-              <ThemedText style={{ color: "#000000" }}>
-                {button.label}
-              </ThemedText>
-            </TouchableOpacity>
-          ) : (
-            <ThemedView
-              key={index}
-              style={[
-                {
-                  width: `${(button.span / 6) * 100 - 0.5}%`,
-                  marginBottom: 4,
-                  marginTop: 4,
-                  marginHorizontal: "0.25%",
-                  height: 2,
-                  backgroundColor: "#FFFFFF",
-                  opacity: 0.8,
-                  alignSelf: "center",
-                },
-              ]}
-            />
-          );
-        })}
+  }) => {
+    if (!isLandscape) {
+      // Portrait mode - original single column layout
+      return (
+        <View style={[styles.screenContainer, { width: '100%' }]}>
+          <View style={styles.buttonGrid}>
+            {screen.ui.map((button, index) => {
+              return button.label ? (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.button,
+                    {
+                      width: `${(button.span / 6) * 100 - 0.5}%`,
+                      margin: "0.25%",
+                    },
+                  ]}
+                  onPress={() => handleButtonPress(button.url)}
+                >
+                  <ThemedText style={{ color: "#000000" }}>
+                    {button.label}
+                  </ThemedText>
+                </TouchableOpacity>
+              ) : (
+                <ThemedView
+                  key={index}
+                  style={[
+                    {
+                      width: `${(button.span / 6) * 100 - 0.5}%`,
+                      marginBottom: 4,
+                      marginTop: 4,
+                      marginHorizontal: "0.25%",
+                      height: 2,
+                      backgroundColor: "#FFFFFF",
+                      opacity: 0.8,
+                      alignSelf: "center",
+                    },
+                  ]}
+                />
+              );
+            })}
+          </View>
+        </View>
+      );
+    }
+
+    // Landscape mode - two column layout
+    const buttons = screen.ui;
+
+    // Calculate rows based on button spans
+    let currentRowSpan = 0;
+    let rowCount = 0;
+    let rowBreakIndices: number[] = [];
+
+    buttons.forEach((button, index) => {
+      currentRowSpan += button.span || 0;
+      if (currentRowSpan >= 6 || currentRowSpan === 0) {
+        // End of row reached or separator encountered
+        rowCount++;
+        if (currentRowSpan >= 6) {
+          rowBreakIndices.push(index);
+        }
+        currentRowSpan = 0;
+      }
+    });
+
+    // If there's a partial row at the end
+    if (currentRowSpan > 0) {
+      rowCount++;
+    }
+
+    // Find the middle row
+    const midRowIndex = Math.ceil(rowCount / 2);
+
+    // Find the button index that starts the middle row
+    let splitIndex = 0;
+    let currentRow = 0;
+    currentRowSpan = 0;
+
+    for (let i = 0; i < buttons.length; i++) {
+      currentRowSpan += buttons[i].span || 0;
+      if (currentRowSpan >= 6 || currentRowSpan === 0) {
+        currentRow++;
+        if (currentRow === midRowIndex) {
+          splitIndex = i + 1;
+          break;
+        }
+        currentRowSpan = 0;
+      }
+    }
+
+    const leftButtons = buttons.slice(0, splitIndex);
+    const rightButtons = buttons.slice(splitIndex);
+
+    return (
+      <View style={[styles.screenContainer, { width: '100%', flexDirection: 'row' }]}>
+        {/* Left Column */}
+        <View style={[styles.buttonGrid, { flex: 1, marginRight: 8 }]}>
+          {leftButtons.map((button, index) => {
+            return button.label ? (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.button,
+                  {
+                    width: `${(button.span / 6) * 100 - 0.5}%`,
+                    margin: "0.25%",
+                  },
+                ]}
+                onPress={() => handleButtonPress(button.url)}
+              >
+                <ThemedText style={{ color: "#000000" }}>
+                  {button.label}
+                </ThemedText>
+              </TouchableOpacity>
+            ) : (
+              <ThemedView
+                key={index}
+                style={[
+                  {
+                    width: `${(button.span / 6) * 100 - 0.5}%`,
+                    marginBottom: 4,
+                    marginTop: 4,
+                    marginHorizontal: "0.25%",
+                    height: 2,
+                    backgroundColor: "#FFFFFF",
+                    opacity: 0.8,
+                    alignSelf: "center",
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
+
+        {/* Right Column */}
+        <View style={[styles.buttonGrid, { flex: 1, marginLeft: 8 }]}>
+          {rightButtons.map((button, index) => {
+            return button.label ? (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.button,
+                  {
+                    width: `${(button.span / 6) * 100 - 0.5}%`,
+                    margin: "0.25%",
+                  },
+                ]}
+                onPress={() => handleButtonPress(button.url)}
+              >
+                <ThemedText style={{ color: "#000000" }}>
+                  {button.label}
+                </ThemedText>
+              </TouchableOpacity>
+            ) : (
+              <ThemedView
+                key={index}
+                style={[
+                  {
+                    width: `${(button.span / 6) * 100 - 0.5}%`,
+                    marginBottom: 4,
+                    marginTop: 4,
+                    marginHorizontal: "0.25%",
+                    height: 2,
+                    backgroundColor: "#FFFFFF",
+                    opacity: 0.8,
+                    alignSelf: "center",
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <ScrollView
@@ -138,9 +313,13 @@ const HomeScreen: React.FC = () => {
             ))}
           </ScrollView>
 
-          <View style={{ flex: 1 }}>
-            {renderScreen({ item: currentScreen, index: state.currentScreenIndex })}
-          </View>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <GestureDetector gesture={gesture}>
+              <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+                {renderScreen({ item: currentScreen, index: state.currentScreenIndex })}
+              </Animated.View>
+            </GestureDetector>
+          </GestureHandlerRootView>
           <Toast
             visible={toast.visible}
             message={toast.message}
