@@ -35,26 +35,6 @@ const HomeScreen: React.FC = () => {
   const { state, dispatch } = useScreens();
   const currentScreen = state.screens[state.currentScreenIndex];
 
-  const viewabilityConfig = React.useMemo(
-    () => ({
-      itemVisiblePercentThreshold: 50,
-    }),
-    []
-  );
-
-  const onViewableItemsChanged = React.useCallback(
-    ({ viewableItems }: any) => {
-      if (viewableItems[0]) {
-        dispatch({ type: "SET_CURRENT_SCREEN", index: viewableItems[0].index });
-      }
-    },
-    [dispatch]
-  );
-
-  const viewabilityConfigCallbackPairs = React.useRef([
-    { viewabilityConfig, onViewableItemsChanged },
-  ]);
-
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ visible: true, message, type });
   };
@@ -79,9 +59,9 @@ const HomeScreen: React.FC = () => {
     item: Screen;
     index: number;
   }) => (
-    <View style={styles.screenContainer}>
+    <View style={[styles.screenContainer, { width: '100%' }]}>
       <View style={styles.buttonGrid}>
-        {currentScreen.ui.map((button, index) => {
+        {screen.ui.map((button, index) => {
           return button.label ? (
             <TouchableOpacity
               key={index}
@@ -121,152 +101,132 @@ const HomeScreen: React.FC = () => {
   );
 
   return (
-    <>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{
+        flexGrow: 1,
+      }}
+    >
       {currentScreen ? (
         <ThemedView style={styles.container}>
           <ScrollView
-        horizontal
-        style={styles.tabBar}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabBarContent}
-        ref={(scrollView) => {
-          if (scrollView && state.currentScreenIndex >= 0) {
-            const tabWidth = 100; // Approximate width of each tab
-            const screenWidth = width;
-            const scrollToX =
-              state.currentScreenIndex * tabWidth -
-              screenWidth / 2 +
-              tabWidth / 2;
-            scrollView.scrollTo({
-              x: Math.max(0, scrollToX),
-              animated: true,
-            });
-          }
-        }}
-      >
-        {state.screens.map((screen, index) => (
-          <Pressable
-            key={screen.id}
-            style={[
-              styles.tab,
-              index === state.currentScreenIndex && styles.activeTab,
-            ]}
-            onPress={() => {
-              flatListRef.current?.scrollToIndex({ index, animated: true });
-            }}
+            horizontal
+            style={styles.tabBar}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabBarContent}
           >
-            <ThemedText
-              style={[
-                styles.tabText,
-                index === state.currentScreenIndex && styles.activeTabText,
-              ]}
-            >
-              {screen.title}
-            </ThemedText>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <View style={{ flex: 1 }}>
-        <FlatList
-          ref={flatListRef}
-          data={state.screens}
-          renderItem={renderScreen}
-          keyExtractor={(item) => item.id}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          viewabilityConfigCallbackPairs={
-            viewabilityConfigCallbackPairs.current
-          }
-        />
-      </View>
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={() => setToast((prev) => ({ ...prev, visible: false }))}
-      />
-      <View style={styles.actionButtonsContainer}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => {
-            setImportModalVisible(true);
-          }}
-        >
-          <ThemedText>Add Screen</ThemedText>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            styles.deleteButton,
-            !currentScreen && styles.hiddenButton,
-          ]}
-          disabled={!currentScreen}
-          onPress={() => {
-            if (currentScreen) {
-              dispatch({ type: "REMOVE_SCREEN", id: currentScreen.id });
-              showToast("Screen deleted", "success");
-            }
-          }}
-        >
-          <ThemedText style={styles.deleteButtonText}>Delete</ThemedText>
-        </TouchableOpacity>
-      </View>
-
-      {importModalVisible && (
-        <Modal
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setImportModalVisible(false)}
-        >
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
-            <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 8, width: "80%" }}>
-              <TextInput
-                style={{ borderColor: "#ccc", borderWidth: 1, padding: 10, marginBottom: 10 }}
-                placeholder="Enter YAML URL"
-                value={importUrl}
-                onChangeText={setImportUrl}
-              />
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setImportModalVisible(false);
-                    setImportUrl("");
-                  }}
-                  style={{ padding: 10 }}
+            {state.screens.map((screen, index) => (
+              <Pressable
+                key={screen.id}
+                style={[
+                  styles.tab,
+                  index === state.currentScreenIndex && styles.activeTab,
+                ]}
+                onPress={() => {
+                  dispatch({ type: "SET_CURRENT_SCREEN", index });
+                }}
+              >
+                <ThemedText
+                  style={[
+                    styles.tabText,
+                    index === state.currentScreenIndex && styles.activeTabText,
+                  ]}
                 >
-                  <ThemedText style={{ color: "#000000" }}>Cancel</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={async () => {
-                    if (importUrl.trim()) {
-                      try {
-                        const screens = await parseScreenConfig(importUrl);
-                        screens.forEach((screen) =>
-                          dispatch({ type: "ADD_SCREEN", screen })
-                        );
-                        showToast("Screen imported successfully", "success");
-                      } catch (error) {
-                        showToast(
-                          error instanceof Error ? error.message : "Import failed",
-                          "error"
-                        );
-                      }
-                      setImportModalVisible(false);
-                      setImportUrl("");
-                    }
-                  }}
-                  style={{ padding: 10 }}
-                >
-                  <ThemedText style={{ color: "#000000" }}>Import</ThemedText>
-                </TouchableOpacity>
-              </View>
-            </View>
+                  {screen.title}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <View style={{ flex: 1 }}>
+            {renderScreen({ item: currentScreen, index: state.currentScreenIndex })}
           </View>
-        </Modal>
-      )}
+          <Toast
+            visible={toast.visible}
+            message={toast.message}
+            type={toast.type}
+            onHide={() => setToast((prev) => ({ ...prev, visible: false }))}
+          />
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => {
+                setImportModalVisible(true);
+              }}
+            >
+              <ThemedText>Add Screen</ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.deleteButton,
+                !currentScreen && styles.hiddenButton,
+              ]}
+              disabled={!currentScreen}
+              onPress={() => {
+                if (currentScreen) {
+                  dispatch({ type: "REMOVE_SCREEN", id: currentScreen.id });
+                  showToast("Screen deleted", "success");
+                }
+              }}
+            >
+              <ThemedText style={styles.deleteButtonText}>Delete</ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          {importModalVisible && (
+            <Modal
+              transparent={true}
+              animationType="slide"
+              onRequestClose={() => setImportModalVisible(false)}
+            >
+              <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
+                <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 8, width: "80%" }}>
+                  <TextInput
+                    style={{ borderColor: "#ccc", borderWidth: 1, padding: 10, marginBottom: 10 }}
+                    placeholder="Enter YAML URL"
+                    value={importUrl}
+                    onChangeText={setImportUrl}
+                  />
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setImportModalVisible(false);
+                        setImportUrl("");
+                      }}
+                      style={{ padding: 10 }}
+                    >
+                      <ThemedText style={{ color: "#000000" }}>Cancel</ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={async () => {
+                        if (importUrl.trim()) {
+                          try {
+                            const screens = await parseScreenConfig(importUrl);
+                            screens.forEach((screen) =>
+                              dispatch({ type: "ADD_SCREEN", screen })
+                            );
+                            showToast("Screen imported successfully", "success");
+                          } catch (error) {
+                            showToast(
+                              error instanceof Error ? error.message : "Import failed",
+                              "error"
+                            );
+                          }
+                          setImportModalVisible(false);
+                          setImportUrl("");
+                        }
+                      }}
+                      style={{ padding: 10 }}
+                    >
+                      <ThemedText style={{ color: "#000000" }}>Import</ThemedText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          )}
         </ThemedView>
       ) : (
         <ThemedView style={styles.container}>
@@ -287,59 +247,7 @@ const HomeScreen: React.FC = () => {
           </View>
         </ThemedView>
       )}
-      {importModalVisible && (
-        <Modal
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setImportModalVisible(false)}
-        >
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
-            <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 8, width: "80%" }}>
-              <TextInput
-                style={{ borderColor: "#ccc", borderWidth: 1, padding: 10, marginBottom: 10 }}
-                placeholder="Enter YAML URL"
-                value={importUrl}
-                onChangeText={setImportUrl}
-              />
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setImportModalVisible(false);
-                    setImportUrl("");
-                  }}
-                  style={{ padding: 10 }}
-                >
-                  <ThemedText style={{ color: "#000000" }}>Cancel</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={async () => {
-                    if (importUrl.trim()) {
-                      try {
-                        const screens = await parseScreenConfig(importUrl);
-                        screens.forEach((screen) =>
-                          dispatch({ type: "ADD_SCREEN", screen })
-                        );
-                        showToast("Screen imported successfully", "success");
-                      } catch (error) {
-                        showToast(
-                          error instanceof Error ? error.message : "Import failed",
-                          "error"
-                        );
-                      }
-                      setImportModalVisible(false);
-                      setImportUrl("");
-                    }
-                  }}
-                  style={{ padding: 10 }}
-                >
-                  <ThemedText style={{ color: "#000000" }}>Import</ThemedText>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
-    </>
+    </ScrollView>
   );
 };
 
@@ -406,9 +314,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   screenContainer: {
-    width,
     padding: 12,
     flex: 1,
+    width: '100%',
   },
   buttonGrid: {
     flexDirection: "row",

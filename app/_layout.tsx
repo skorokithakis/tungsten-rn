@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { ScreensProvider } from '../src/stores/screensStore';
@@ -19,6 +20,23 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    async function setupOrientation() {
+      // Enable all orientations
+      await ScreenOrientation.unlockAsync();
+
+      // Get current orientation
+      const orientation = await ScreenOrientation.getOrientationAsync();
+      console.log('Current orientation:', orientation);
+
+      // Listen to orientation changes
+      ScreenOrientation.addOrientationChangeListener((event) => {
+        const orientation = event.orientationInfo.orientation;
+        console.log('Orientation changed:', orientation);
+      });
+    }
+
+    setupOrientation();
+
     if (loaded) {
       SplashScreen.hideAsync();
     }
@@ -32,8 +50,8 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <ScreensProvider>
         <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
       </ScreensProvider>
