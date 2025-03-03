@@ -203,7 +203,7 @@ const HomeScreen: React.FC = () => {
                 style={[
                   styles.button,
                   {
-                    width: `${(button.span / 6) * 100 - 0.5}%`,
+                    width: `${(button.span / 6) * 100 - 1}%`,
                     margin: "0.25%",
                   },
                 ]}
@@ -242,7 +242,7 @@ const HomeScreen: React.FC = () => {
                 style={[
                   styles.button,
                   {
-                    width: `${(button.span / 6) * 100 - 0.5}%`,
+                    width: `${(button.span / 6) * 100 - 1}%`,
                     margin: "0.25%",
                   },
                 ]}
