@@ -17,13 +17,17 @@ import { useScreens } from "../../src/stores/screensStore";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import client from "../../src/services/client";
-import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  GestureHandlerRootView,
+  Gesture,
+  GestureDetector,
+} from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  runOnJS
-} from 'react-native-reanimated';
+  runOnJS,
+} from "react-native-reanimated";
 
 const HomeScreen: React.FC = () => {
   const { width, height } = useWindowDimensions();
@@ -61,10 +65,11 @@ const HomeScreen: React.FC = () => {
     }
   };
 
-  const handleScreenChange = (direction: 'left' | 'right') => {
-    const newIndex = direction === 'left'
-      ? Math.min(state.currentScreenIndex + 1, state.screens.length - 1)
-      : Math.max(state.currentScreenIndex - 1, 0);
+  const handleScreenChange = (direction: "left" | "right") => {
+    const newIndex =
+      direction === "left"
+        ? Math.min(state.currentScreenIndex + 1, state.screens.length - 1)
+        : Math.max(state.currentScreenIndex - 1, 0);
 
     dispatch({ type: "SET_CURRENT_SCREEN", index: newIndex });
   };
@@ -79,10 +84,10 @@ const HomeScreen: React.FC = () => {
       if (Math.abs(e.translationX) > threshold) {
         if (e.translationX > 0) {
           // Swipe right
-          runOnJS(handleScreenChange)('right');
+          runOnJS(handleScreenChange)("right");
         } else {
           // Swipe left
-          runOnJS(handleScreenChange)('left');
+          runOnJS(handleScreenChange)("left");
         }
       }
       translateX.value = withSpring(0);
@@ -102,7 +107,7 @@ const HomeScreen: React.FC = () => {
     if (!isLandscape) {
       // Portrait mode - original single column layout
       return (
-        <View style={[styles.screenContainer, { width: '100%' }]}>
+        <View style={[styles.screenContainer, { width: "100%" }]}>
           <View style={styles.buttonGrid}>
             {screen.ui.map((button, index) => {
               return button.label ? (
@@ -193,7 +198,12 @@ const HomeScreen: React.FC = () => {
     const rightButtons = buttons.slice(splitIndex);
 
     return (
-      <View style={[styles.screenContainer, { width: '100%', flexDirection: 'row' }]}>
+      <View
+        style={[
+          styles.screenContainer,
+          { width: "100%", flexDirection: "row" },
+        ]}
+      >
         {/* Left Column */}
         <View style={[styles.buttonGrid, { flex: 1, marginRight: 8 }]}>
           {leftButtons.map((button, index) => {
@@ -276,157 +286,189 @@ const HomeScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{
-        flexGrow: 1,
-      }}
-    >
-      {currentScreen ? (
-        <ThemedView style={styles.container}>
-          <ScrollView
-            horizontal
-            style={styles.tabBar}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tabBarContent}
-          >
-            {state.screens.map((screen, index) => (
-              <Pressable
-                key={screen.id}
-                style={[
-                  styles.tab,
-                  index === state.currentScreenIndex && styles.activeTab,
-                ]}
+    <>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+        }}
+      >
+        {currentScreen ? (
+          <ThemedView style={styles.container}>
+            <ScrollView
+              horizontal
+              style={styles.tabBar}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tabBarContent}
+            >
+              {state.screens.map((screen, index) => (
+                <Pressable
+                  key={screen.id}
+                  style={[
+                    styles.tab,
+                    index === state.currentScreenIndex && styles.activeTab,
+                  ]}
+                  onPress={() => {
+                    dispatch({ type: "SET_CURRENT_SCREEN", index });
+                  }}
+                >
+                  <ThemedText
+                    style={[
+                      styles.tabText,
+                      index === state.currentScreenIndex &&
+                        styles.activeTabText,
+                    ]}
+                  >
+                    {screen.title}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <GestureDetector gesture={gesture}>
+                <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+                  {renderScreen({
+                    item: currentScreen,
+                    index: state.currentScreenIndex,
+                  })}
+                </Animated.View>
+              </GestureDetector>
+            </GestureHandlerRootView>
+            <Toast
+              visible={toast.visible}
+              message={toast.message}
+              type={toast.type}
+              onHide={() => setToast((prev) => ({ ...prev, visible: false }))}
+            />
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                style={styles.actionButton}
                 onPress={() => {
-                  dispatch({ type: "SET_CURRENT_SCREEN", index });
+                  setImportModalVisible(true);
                 }}
               >
-                <ThemedText
-                  style={[
-                    styles.tabText,
-                    index === state.currentScreenIndex && styles.activeTabText,
-                  ]}
+                <ThemedText>Add Screen</ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  styles.deleteButton,
+                  !currentScreen && styles.hiddenButton,
+                ]}
+                disabled={!currentScreen}
+                onPress={() => {
+                  if (currentScreen) {
+                    dispatch({ type: "REMOVE_SCREEN", id: currentScreen.id });
+                    showToast("Screen deleted", "success");
+                  }
+                }}
+              >
+                <ThemedText style={styles.deleteButtonText}>Delete</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </ThemedView>
+        ) : (
+          <ThemedView style={styles.container}>
+            <View style={styles.emptyStateContainer}>
+              <ThemedText style={styles.emptyStateText}>
+                There are no screens configured. Press 'Add Screen' to download
+                a YAML configuration file.
+              </ThemedText>
+            </View>
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  setImportModalVisible(true);
+                }}
+              >
+                <ThemedText>Add Screen</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </ThemedView>
+        )}
+      </ScrollView>
+      {importModalVisible && (
+        <Modal
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setImportModalVisible(false)}
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "#fff",
+                padding: 20,
+                borderRadius: 8,
+                width: "80%",
+              }}
+            >
+              <TextInput
+                style={{
+                  borderColor: "#ccc",
+                  borderWidth: 1,
+                  padding: 10,
+                  marginBottom: 10,
+                }}
+                placeholder="Enter YAML URL"
+                value={importUrl}
+                onChangeText={setImportUrl}
+              />
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => {
+                    setImportModalVisible(false);
+                    setImportUrl("");
+                  }}
+                  style={{ padding: 10 }}
                 >
-                  {screen.title}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </ScrollView>
-
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <GestureDetector gesture={gesture}>
-              <Animated.View style={[{ flex: 1 }, animatedStyle]}>
-                {renderScreen({ item: currentScreen, index: state.currentScreenIndex })}
-              </Animated.View>
-            </GestureDetector>
-          </GestureHandlerRootView>
-          <Toast
-            visible={toast.visible}
-            message={toast.message}
-            type={toast.type}
-            onHide={() => setToast((prev) => ({ ...prev, visible: false }))}
-          />
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => {
-                setImportModalVisible(true);
-              }}
-            >
-              <ThemedText>Add Screen</ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                styles.deleteButton,
-                !currentScreen && styles.hiddenButton,
-              ]}
-              disabled={!currentScreen}
-              onPress={() => {
-                if (currentScreen) {
-                  dispatch({ type: "REMOVE_SCREEN", id: currentScreen.id });
-                  showToast("Screen deleted", "success");
-                }
-              }}
-            >
-              <ThemedText style={styles.deleteButtonText}>Delete</ThemedText>
-            </TouchableOpacity>
-          </View>
-
-          {importModalVisible && (
-            <Modal
-              transparent={true}
-              animationType="slide"
-              onRequestClose={() => setImportModalVisible(false)}
-            >
-              <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
-                <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 8, width: "80%" }}>
-                  <TextInput
-                    style={{ borderColor: "#ccc", borderWidth: 1, padding: 10, marginBottom: 10 }}
-                    placeholder="Enter YAML URL"
-                    value={importUrl}
-                    onChangeText={setImportUrl}
-                  />
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setImportModalVisible(false);
-                        setImportUrl("");
-                      }}
-                      style={{ padding: 10 }}
-                    >
-                      <ThemedText style={{ color: "#000000" }}>Cancel</ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={async () => {
-                        if (importUrl.trim()) {
-                          try {
-                            const screens = await parseScreenConfig(importUrl);
-                            screens.forEach((screen) =>
-                              dispatch({ type: "ADD_SCREEN", screen })
-                            );
-                            showToast("Screen imported successfully", "success");
-                          } catch (error) {
-                            showToast(
-                              error instanceof Error ? error.message : "Import failed",
-                              "error"
-                            );
-                          }
-                          setImportModalVisible(false);
-                          setImportUrl("");
-                        }
-                      }}
-                      style={{ padding: 10 }}
-                    >
-                      <ThemedText style={{ color: "#000000" }}>Import</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                  <ThemedText style={{ color: "#000000" }}>Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (importUrl.trim()) {
+                      try {
+                        const screens = await parseScreenConfig(importUrl);
+                        screens.forEach((screen) =>
+                          dispatch({ type: "ADD_SCREEN", screen })
+                        );
+                        showToast("Screen imported successfully", "success");
+                      } catch (error) {
+                        showToast(
+                          error instanceof Error
+                            ? error.message
+                            : "Import failed",
+                          "error"
+                        );
+                      }
+                      setImportModalVisible(false);
+                      setImportUrl("");
+                    }
+                  }}
+                  style={{ padding: 10 }}
+                >
+                  <ThemedText style={{ color: "#000000" }}>Import</ThemedText>
+                </TouchableOpacity>
               </View>
-            </Modal>
-          )}
-        </ThemedView>
-      ) : (
-        <ThemedView style={styles.container}>
-          <View style={styles.emptyStateContainer}>
-            <ThemedText style={styles.emptyStateText}>
-              There are no screens configured. Press 'Add Screen' to download a YAML configuration file.
-            </ThemedText>
+            </View>
           </View>
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => {
-                setImportModalVisible(true);
-              }}
-            >
-              <ThemedText>Add Screen</ThemedText>
-            </TouchableOpacity>
-          </View>
-        </ThemedView>
+        </Modal>
       )}
-    </ScrollView>
+    </>
   );
 };
 
@@ -449,8 +491,8 @@ const styles = StyleSheet.create({
   tabBarContent: {
     paddingHorizontal: 12,
     paddingBottom: 8,
-    flexDirection: 'row', // Ensure horizontal layout
-    alignItems: 'center', // Center items vertically
+    flexDirection: "row", // Ensure horizontal layout
+    alignItems: "center", // Center items vertically
   },
   tab: {
     paddingHorizontal: 12,
@@ -495,7 +537,7 @@ const styles = StyleSheet.create({
   screenContainer: {
     padding: 12,
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   buttonGrid: {
     flexDirection: "row",
@@ -515,12 +557,12 @@ const styles = StyleSheet.create({
   },
   emptyStateContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   emptyStateText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 16,
     lineHeight: 24,
   },
