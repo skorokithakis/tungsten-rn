@@ -25,7 +25,7 @@ export async function parseScreenConfig(url: string): Promise<Screen[]> {
         ui: data.ui.map((button: any) => ({
           label: button.label,
           span: Math.min(Math.max(button.span || 1, 1), 6),
-          width: Math.min(Math.max(button.width || 4, 1), 6), // Default to 4, min 1, max 6
+          height: button.height || 1, // Parse height, default to 1 if not provided
           url: button.url
         }))
       };

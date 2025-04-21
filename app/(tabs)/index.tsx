@@ -29,6 +29,8 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 
+const BASE_BUTTON_HEIGHT = 40; // Base height for a button with height: 1
+
 const HomeScreen: React.FC = () => {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
@@ -111,12 +113,15 @@ const HomeScreen: React.FC = () => {
           <View style={styles.buttonGrid}>
             {screen.ui.map((button, index) => {
               return button.label ? (
+                // Add this log to check the button data including height
+                console.log("Portrait Button Data:", JSON.stringify(button)),
                 <TouchableOpacity
-                  key={index}
+                  key={`${screen.id}-button-${index}`} // Unique key for button
                   style={[
                     styles.button,
                     {
-                      width: `${(button.span / 6) * 100 - 0.5}%`,
+                      height: BASE_BUTTON_HEIGHT * (button.height || 1),
+                      width: `${(button.span / 6) * 100 - 1}%`, // Use adjusted width
                       margin: "0.25%",
                     },
                   ]}
@@ -128,11 +133,11 @@ const HomeScreen: React.FC = () => {
                 </TouchableOpacity>
               ) : (
                 <ThemedView
-                  key={index}
+                  key={`${screen.id}-separator-${index}`} // Unique key for separator
                   style={[
                     {
-                      width: `${(button.span / 6) * 100 - 0.5}%`,
-                      marginBottom: 4,
+                      width: `${(button.span / 6) * 100 - 1}%`, // Use adjusted width
+                      marginBottom: 4, // Keep separator margins
                       marginTop: 4,
                       marginHorizontal: "0.25%",
                       height: 2,
@@ -208,12 +213,15 @@ const HomeScreen: React.FC = () => {
         <View style={[styles.buttonGrid, { flex: 1, marginRight: 8 }]}>
           {leftButtons.map((button, index) => {
             return button.label ? (
+              // Add this log to check the button data including height
+              console.log("Landscape Left Button Data:", JSON.stringify(button)),
               <TouchableOpacity
-                key={index}
+                key={`${screen.id}-button-${index}`} // Correct unique key for left button
                 style={[
                   styles.button,
                   {
-                    width: `${(button.span / 6) * 100 - 1}%`,
+                    height: BASE_BUTTON_HEIGHT * (button.height || 1),
+                    width: `${(button.span / 6) * 100 - 1}%`, // Keep adjusted width
                     margin: "0.25%",
                   },
                 ]}
@@ -225,11 +233,11 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
             ) : (
               <ThemedView
-                key={index}
+                key={`${screen.id}-separator-${index}`} // Correct unique key for left separator
                 style={[
                   {
-                    width: `${(button.span / 6) * 100 - 0.5}%`,
-                    marginBottom: 4,
+                    width: `${(button.span / 6) * 100 - 1}%`, // Use adjusted width
+                    marginBottom: 4, // Keep separator margins
                     marginTop: 4,
                     marginHorizontal: "0.25%",
                     height: 2,
@@ -247,12 +255,15 @@ const HomeScreen: React.FC = () => {
         <View style={[styles.buttonGrid, { flex: 1, marginLeft: 8 }]}>
           {rightButtons.map((button, index) => {
             return button.label ? (
+              // Add this log to check the button data including height
+              console.log("Landscape Right Button Data:", JSON.stringify(button)),
               <TouchableOpacity
-                key={index}
+                key={`${screen.id}-button-${splitIndex + index}`} // Correct unique key for right button
                 style={[
                   styles.button,
                   {
-                    width: `${(button.span / 6) * 100 - 1}%`,
+                    height: BASE_BUTTON_HEIGHT * (button.height || 1),
+                    width: `${(button.span / 6) * 100 - 1}%`, // Keep adjusted width
                     margin: "0.25%",
                   },
                 ]}
@@ -264,11 +275,11 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
             ) : (
               <ThemedView
-                key={index}
+                key={`${screen.id}-separator-${splitIndex + index}`} // Unique key using original index + offset
                 style={[
                   {
-                    width: `${(button.span / 6) * 100 - 0.5}%`,
-                    marginBottom: 4,
+                    width: `${(button.span / 6) * 100 - 1}%`, // Use adjusted width
+                    marginBottom: 4, // Keep separator margins
                     marginTop: 4,
                     marginHorizontal: "0.25%",
                     height: 2,
@@ -552,8 +563,8 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
+    marginBottom: 6, // Add vertical spacing between buttons
+    justifyContent: "center", // Keep vertical centering
   },
   emptyStateContainer: {
     flex: 1,

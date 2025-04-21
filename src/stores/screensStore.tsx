@@ -6,6 +6,7 @@ export interface Button {
   span: number;
   width: number;
   url: string;
+  height?: number; // Add this line
 }
 
 export interface Screen {
