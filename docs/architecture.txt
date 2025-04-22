@@ -1,0 +1,112 @@
+Project architecture
+====================
+
+This file details high-level information about this project.
+
+Project requirements
+--------------------
+
+Tungsten is a remote control app for mobile devices. Its primary requirements are:
+
+1.  **Configurable UI:** The user interface, specifically the layout of control buttons
+    on different screens, must be configurable by loading external YAML files via URL.
+2.  **Remote Control Actions:** Buttons defined in the configuration must trigger HTTP
+    POST requests to specified URLs when pressed.
+3.  **Screen Management:** Users should be able to add multiple screens from different
+    YAML sources and switch between them.
+4.  **Persistence:** Added screen configurations must persist across app launches.
+5.  **User Feedback:** Provide visual feedback (e.g., toasts) for successful or failed
+    actions and configuration imports.
+6.  **Responsive Layout:** The UI should adapt reasonably to both portrait and landscape
+    orientations.
+7.  **Configurable Buttons:** The button width should conform to a 6-column grid, with
+    buttons being able to span as many of those columns as needed via the YAML `width`
+    parameter. When the columns have been exhausted, the buttons should wrap to the next
+    row.  Buttons also have a configurable height, which makes the whole row as tall as
+    the tallest button.
+
+High-Level Overview
+-------------------
+
+The application is built using React Native with Expo and TypeScript. It allows users to
+define custom remote control interfaces (screens) by importing YAML configuration files
+from URLs. Each screen consists of a grid of buttons and separators. Pressing a button
+sends an HTTP POST request to a pre-defined URL associated with that button. Users can
+swipe between configured screens or select them from a top tab bar. Screen
+configurations are stored locally using AsyncStorage.
+
+Project Structure
+-----------------
+
+*   `app/`: Contains the application's routing and screen components, managed by Expo Router.
+    *   `_layout.tsx`: Root layout, sets up ThemeProvider, ScreensProvider, and global configurations like screen orientation.
+    *   `(tabs)/`: Defines the main tab-based navigation structure.
+        *   `_layout.tsx`: Layout for the tabs, currently configured to hide the default tab bar.
+        *   `index.tsx`: The main screen component displaying the configured remote control interface, handling screen switching, button presses, and configuration import/deletion.
+    *   `+not-found.tsx`: Screen displayed for unmatched routes.
+*   `assets/`: Static assets like fonts and images.
+*   `components/`: Reusable UI components.
+    *   `ui/`: Platform-specific or core UI elements (e.g., `IconSymbol`).
+    *   `ThemedText.tsx`, `ThemedView.tsx`: Components that adapt to the current color scheme (light/dark).
+    *   `ParallaxScrollView.tsx`: Used for screens with large header images (like the old import screen).
+    *   `Toast.tsx`: Component for displaying temporary success/error messages.
+    *   Other specific UI components (`Collapsible`, `HelloWave`, etc.).
+*   `constants/`: Shared constant values, like `Colors.ts`.
+*   `docs/`: Project documentation (like this file).
+*   `hooks/`: Custom React hooks.
+    *   `useColorScheme.ts`: Provides the current color scheme (light/dark).
+    *   `useThemeColor.ts`: Hook to get theme-specific colors.
+*   `src/`: Core application logic and services.
+    *   `components/`: Core, non-UI specific components (currently only `Toast.tsx`, might be better placed in `components/`).
+    *   `services/`: Modules for specific functionalities.
+        *   `network/`: Network request logic (`client.ts`).
+        *   `storage/`: Data persistence logic (`screens.ts`).
+        *   `yaml/`: YAML parsing logic (`parser.ts`).
+    *   `stores/`: State management logic.
+        *   `screensStore.tsx`: Zustand-like state management for screen configurations using React Context and Reducer.
+
+Key Files & Concepts
+--------------------
+
+*   **`app/(tabs)/index.tsx` (HomeScreen):**
+    *   The central hub of the application.
+    *   Displays the current screen's buttons based on the configuration.
+    *   Handles button presses (`handleButtonPress`) by sending requests via the network client.
+    *   Manages the display and interaction logic for adding/deleting screens (Modal, Action Buttons).
+    *   Implements swipe gestures (`GestureDetector`, `Reanimated`) for switching between screens (`handleScreenChange`).
+    *   Adapts layout between portrait (single column) and landscape (two columns).
+    *   Renders the top tab bar for screen selection.
+*   **`src/stores/screensStore.tsx`:**
+    *   Defines the structure for `Screen` and `Button` objects.
+    *   Uses `useReducer` and `Context` to manage the global state of screens (list of screens, current screen index).
+    *   Provides `ScreensProvider` to wrap the app and `useScreens` hook to access state and dispatch actions (`ADD_SCREEN`, `REMOVE_SCREEN`, `SET_CURRENT_SCREEN`).
+    *   Integrates with `src/services/storage/screens.ts` to load/save screen configurations on mount/update.
+*   **`src/services/yaml/parser.ts`:**
+    *   Fetches content from a given URL.
+    *   Uses the `js-yaml` library to parse the fetched text into JavaScript objects.
+    *   Validates the structure and transforms it into the `Screen[]` format expected by the application state.
+    *   Handles potential errors during fetching or parsing.
+*   **`src/services/network/client.ts`:**
+    *   Exports an Axios instance (`client`) pre-configured with a timeout.
+    *   Used by `handleButtonPress` in `HomeScreen` to send POST requests.
+    *   Includes basic error handling via interceptors.
+*   **`src/services/storage/screens.ts`:**
+    *   Uses `AsyncStorage` to save and load the array of `Screen` configurations as a JSON string.
+    *   Provides `saveScreens` and `loadScreens` async functions.
+*   **Theming:**
+    *   Uses `@react-navigation/native` `ThemeProvider` and a custom `useColorScheme` hook.
+    *   `ThemedText` and `ThemedView` components automatically adapt colors based on the theme.
+    *   Colors are defined in `constants/Colors.ts`.
+*   **Layout:**
+    *   Uses Flexbox for layout.
+    *   `HomeScreen` dynamically changes the button grid layout based on screen orientation (`useWindowDimensions`). Buttons have `span` (1-6) and `height` properties defined in YAML.
+
+Contributing
+------------
+
+To contribute, familiarize yourself with:
+
+1.  **State Management:** How `screensStore.tsx` manages the list of screens and the current index.
+2.  **UI Rendering:** How `app/(tabs)/index.tsx` renders screens and buttons based on the state and adapts to orientation.
+3.  **YAML Parsing:** How `src/services/yaml/parser.ts` converts YAML text into the application's data structure.
+4.  **Expo Router:** How navigation and layouts are defined in the `app/` directory.
