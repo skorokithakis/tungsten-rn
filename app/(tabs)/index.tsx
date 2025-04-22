@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { parseScreenConfig } from "../../src/services/yaml/parser";
 import { Toast } from "../../src/components/Toast";
-import { useScreens } from "../../src/stores/screensStore";
+import { useScreens, Screen, Button } from "../../src/stores/screensStore";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import client from "../../src/services/client";
@@ -99,198 +99,140 @@ const HomeScreen: React.FC = () => {
     transform: [{ translateX: translateX.value }],
   }));
 
-  const renderScreen = ({
-    item: screen,
-    index,
-  }: {
-    item: Screen;
-    index: number;
-  }) => {
+  // Define this helper function within the HomeScreen component or outside it
+  const renderButtonOrSeparator = (
+    button: Button, screenId: string, index: number, totalColumnsInRow: number, // Renamed parameter
+    // Add containerWidth and gapSize parameters
+    containerWidth: number,
+    gapSize: number
+   ) => {
+    const isSeparator = !button.label;
+    // Separators span all columns, buttons use their defined span
+    // const itemSpan = isSeparator ? totalColumnsInRow : button.span; // No longer needed here
+
+    // Check if it's intended as a separator (empty label AND spans the full row)
+    if (isSeparator && button.span === totalColumnsInRow) {
+      return (
+        <ThemedView
+          key={`${screenId}-separator-${index}`}
+          style={[
+            {
+              width: '100%', // Separator spans full width of its container
+              height: 2,
+              backgroundColor: "#FFFFFF",
+              opacity: 0.8,
+              marginVertical: 8, // Add some vertical margin for separators
+            },
+          ]}
+        />
+      );
+    } else if (isSeparator) {
+      // It has an empty label but doesn't span the row - render nothing
+      return null;
+    } else {
+      // Ensure button span doesn't exceed available columns in this context
+      const effectiveSpan = Math.min(button.span, totalColumnsInRow);
+
+      // Calculate exact width based on container width, gaps, and span
+      const totalGapSpaceInRow = (totalColumnsInRow - 1) * gapSize;
+      const availableWidthForButtons = containerWidth - totalGapSpaceInRow; // Total space purely for button content areas
+      // Calculate the width allocated to a single column span
+      const widthPerSpan = availableWidthForButtons / totalColumnsInRow;
+      // Calculate the final width for this button element:
+      // Sum of widths for each span it covers + the gaps between those spans
+      let buttonWidth = (widthPerSpan * effectiveSpan) + (gapSize * (effectiveSpan - 1));
+      // Floor the result to avoid potential floating point overflows causing wraps
+      buttonWidth = Math.floor(buttonWidth);
+
+      // --- DEBUG LOGGING (More Verbose) ---
+      // console.log(`Rendering Button: Label='${button.label}' (Type: ${typeof button.label}), Calculated Width=${buttonWidth}`); // Keep previous log
+      // --- END DEBUG LOGGING ---
+      return (
+        <TouchableOpacity
+          key={`${screenId}-button-${index}`}
+          style={[
+            styles.button,
+            {
+              height: BASE_BUTTON_HEIGHT * (button.height || 1)
+            },
+            // Apply calculated width instead of flexBasis
+            { width: buttonWidth }
+           ]}
+          onPress={() => handleButtonPress(button.url)}
+        >
+          <ThemedText style={{ color: "#000000", textAlign: 'center' }}>
+            {button.label}
+          </ThemedText>
+        </TouchableOpacity>
+      );
+    }
+  };
+
+
+  // Replace the existing renderScreen function with this:
+  const renderScreen = ({ item: screen }: { item: Screen; index: number }) => {
+    const screenPadding = styles.screenContainer.padding ?? 0; // Get padding from style
+    const gridGap = styles.buttonGrid.gap ?? 0; // Get gap from style
+    const items = screen.ui;
+
+    // Calculate the total available width within the screen container (device width minus screen padding)
+    const containerWidth = width - (2 * screenPadding);
+
+    // --- DEBUG LOGGING (More Verbose) ---
+    // console.log(`Rendering Screen: Title='${screen.title}' (Type: ${typeof screen.title}), Orientation=${isLandscape ? 'Landscape' : 'Portrait'}`); // Keep previous log
+    // --- END DEBUG LOGGING ---
+
     if (!isLandscape) {
-      // Portrait mode - original single column layout
+      // Portrait mode - single column
+
+      const renderedItems = items.map((item, index) => {
+        const element = renderButtonOrSeparator(item, screen.id, index, 6, containerWidth, gridGap); // Pass 6 columns, width, gap
+        // Log the type of the rendered element. For components, it might log the function name or 'Object'. For null, it logs 'null'. Strings would log 'string'.
+        return element;
+      });
+
       return (
         <View style={[styles.screenContainer, { width: "100%" }]}>
           <View style={styles.buttonGrid}>
-            {screen.ui.map((button, index) => {
-              return button.label ? (
-                // Add this log to check the button data including height
-                console.log("Portrait Button Data:", JSON.stringify(button)),
-                <TouchableOpacity
-                  key={`${screen.id}-button-${index}`} // Unique key for button
-                  style={[
-                    styles.button,
-                    {
-                      height: BASE_BUTTON_HEIGHT * (button.height || 1),
-                      width: `${(button.span / 6) * 100 - 1}%`, // Use adjusted width
-                      margin: "0.25%",
-                    },
-                  ]}
-                  onPress={() => handleButtonPress(button.url)}
-                >
-                  <ThemedText style={{ color: "#000000" }}>
-                    {button.label}
-                  </ThemedText>
-                </TouchableOpacity>
-              ) : (
-                <ThemedView
-                  key={`${screen.id}-separator-${index}`} // Unique key for separator
-                  style={[
-                    {
-                      width: `${(button.span / 6) * 100 - 1}%`, // Use adjusted width
-                      marginBottom: 4, // Keep separator margins
-                      marginTop: 4,
-                      marginHorizontal: "0.25%",
-                      height: 2,
-                      backgroundColor: "#FFFFFF",
-                      opacity: 0.8,
-                      alignSelf: "center",
-                    },
-                  ]}
-                />
-              );
-            })}
+            {renderedItems}
           </View>
         </View>
       );
     }
 
-    // Landscape mode - two column layout
-    const buttons = screen.ui;
+    // Landscape mode - two columns
+    // Simple split in the middle
+    const landscapeColumnGap = 16; // Gap between the two columns
+    // Width of each column container
+    const columnContainerWidth = (containerWidth - landscapeColumnGap) / 2; // Use the overall containerWidth
+    // Width available for buttons within each column grid (column width minus its internal padding)
+    const buttonGridContainerWidth = columnContainerWidth; // Assuming no extra padding inside the column View
 
-    // Calculate rows based on button spans
-    let currentRowSpan = 0;
-    let rowCount = 0;
-    let rowBreakIndices: number[] = [];
+    const midIndex = Math.ceil(items.length / 2);
+    const leftItems = items.slice(0, midIndex);
+    const rightItems = items.slice(midIndex);
 
-    buttons.forEach((button, index) => {
-      currentRowSpan += button.span || 0;
-      if (currentRowSpan >= 6 || currentRowSpan === 0) {
-        // End of row reached or separator encountered
-        rowCount++;
-        if (currentRowSpan >= 6) {
-          rowBreakIndices.push(index);
-        }
-        currentRowSpan = 0;
-      }
+    const renderedLeftItems = leftItems.map((item, index) => {
+      const element = renderButtonOrSeparator(item, screen.id, index, 6, buttonGridContainerWidth, gridGap); // Pass 6 columns, width, gap
+      return element;
     });
 
-    // If there's a partial row at the end
-    if (currentRowSpan > 0) {
-      rowCount++;
-    }
-
-    // Find the middle row
-    const midRowIndex = Math.ceil(rowCount / 2);
-
-    // Find the button index that starts the middle row
-    let splitIndex = 0;
-    let currentRow = 0;
-    currentRowSpan = 0;
-
-    for (let i = 0; i < buttons.length; i++) {
-      currentRowSpan += buttons[i].span || 0;
-      if (currentRowSpan >= 6 || currentRowSpan === 0) {
-        currentRow++;
-        if (currentRow === midRowIndex) {
-          splitIndex = i + 1;
-          break;
-        }
-        currentRowSpan = 0;
-      }
-    }
-
-    const leftButtons = buttons.slice(0, splitIndex);
-    const rightButtons = buttons.slice(splitIndex);
+    const renderedRightItems = rightItems.map((item, index) => {
+      // Use midIndex + index for the key to ensure uniqueness across columns
+      const element = renderButtonOrSeparator(item, screen.id, midIndex + index, 6, buttonGridContainerWidth, gridGap); // Pass 6 columns, width, gap
+      return element;
+    });
 
     return (
-      <View
-        style={[
-          styles.screenContainer,
-          { width: "100%", flexDirection: "row" },
-        ]}
-      >
+      <View style={[styles.screenContainer, { width: "100%", flexDirection: "row", gap: landscapeColumnGap }]}>
         {/* Left Column */}
-        <View style={[styles.buttonGrid, { flex: 1, marginRight: 8 }]}>
-          {leftButtons.map((button, index) => {
-            return button.label ? (
-              // Add this log to check the button data including height
-              console.log("Landscape Left Button Data:", JSON.stringify(button)),
-              <TouchableOpacity
-                key={`${screen.id}-button-${index}`} // Correct unique key for left button
-                style={[
-                  styles.button,
-                  {
-                    height: BASE_BUTTON_HEIGHT * (button.height || 1),
-                    width: `${(button.span / 6) * 100 - 1}%`, // Keep adjusted width
-                    margin: "0.25%",
-                  },
-                ]}
-                onPress={() => handleButtonPress(button.url)}
-              >
-                <ThemedText style={{ color: "#000000" }}>
-                  {button.label}
-                </ThemedText>
-              </TouchableOpacity>
-            ) : (
-              <ThemedView
-                key={`${screen.id}-separator-${index}`} // Correct unique key for left separator
-                style={[
-                  {
-                    width: `${(button.span / 6) * 100 - 1}%`, // Use adjusted width
-                    marginBottom: 4, // Keep separator margins
-                    marginTop: 4,
-                    marginHorizontal: "0.25%",
-                    height: 2,
-                    backgroundColor: "#FFFFFF",
-                    opacity: 0.8,
-                    alignSelf: "center",
-                  },
-                ]}
-              />
-            );
-          })}
+        <View style={[styles.buttonGrid, { flex: 1, marginTop: 0 /* Reset margin top */ }]}>
+          {renderedLeftItems}
         </View>
 
         {/* Right Column */}
-        <View style={[styles.buttonGrid, { flex: 1, marginLeft: 8 }]}>
-          {rightButtons.map((button, index) => {
-            return button.label ? (
-              // Add this log to check the button data including height
-              console.log("Landscape Right Button Data:", JSON.stringify(button)),
-              <TouchableOpacity
-                key={`${screen.id}-button-${splitIndex + index}`} // Correct unique key for right button
-                style={[
-                  styles.button,
-                  {
-                    height: BASE_BUTTON_HEIGHT * (button.height || 1),
-                    width: `${(button.span / 6) * 100 - 1}%`, // Keep adjusted width
-                    margin: "0.25%",
-                  },
-                ]}
-                onPress={() => handleButtonPress(button.url)}
-              >
-                <ThemedText style={{ color: "#000000" }}>
-                  {button.label}
-                </ThemedText>
-              </TouchableOpacity>
-            ) : (
-              <ThemedView
-                key={`${screen.id}-separator-${splitIndex + index}`} // Unique key using original index + offset
-                style={[
-                  {
-                    width: `${(button.span / 6) * 100 - 1}%`, // Use adjusted width
-                    marginBottom: 4, // Keep separator margins
-                    marginTop: 4,
-                    marginHorizontal: "0.25%",
-                    height: 2,
-                    backgroundColor: "#FFFFFF",
-                    opacity: 0.8,
-                    alignSelf: "center",
-                  },
-                ]}
-              />
-            );
-          })}
+        <View style={[styles.buttonGrid, { flex: 1, marginTop: 0 /* Reset margin top */ }]}>
+          {renderedRightItems}
         </View>
       </View>
     );
@@ -556,14 +498,14 @@ const styles = StyleSheet.create({
     marginTop: 16,
     width: "100%",
     justifyContent: "flex-start",
-    marginHorizontal: "-0.25%",
+    gap: 4, // Use gap for spacing between items
   },
   button: {
     backgroundColor: "#A1CEDC",
     padding: 8,
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 6, // Add vertical spacing between buttons
+    // marginBottom: 6, // Handled by gap now
     justifyContent: "center", // Keep vertical centering
   },
   emptyStateContainer: {

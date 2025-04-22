@@ -4,9 +4,9 @@ import { saveScreens, loadScreens } from '../services/storage/screens';
 export interface Button {
   label: string;
   span: number;
-  width: number;
+  // width: number; // Removed as it's not used and span dictates width percentage
   url: string;
-  height?: number; // Add this line
+  height?: number;
 }
 
 export interface Screen {
@@ -20,10 +20,11 @@ interface ScreensState {
   currentScreenIndex: number;
 }
 
-type ScreensAction = 
+type ScreensAction =
   | { type: 'ADD_SCREEN'; screen: Screen }
   | { type: 'REMOVE_SCREEN'; id: string }
-  | { type: 'SET_CURRENT_SCREEN'; index: number };
+  | { type: 'SET_CURRENT_SCREEN'; index: number }
+  | { type: 'SET_SCREENS'; screens: Screen[] };
 
 const initialState: ScreensState = {
   screens: [],
@@ -43,15 +44,24 @@ function screensReducer(state: ScreensState, action: ScreensAction): ScreensStat
         screens: [...state.screens, action.screen]
       };
     case 'REMOVE_SCREEN':
+      const newScreens = state.screens.filter(screen => screen.id !== action.id);
+      const newIndex = Math.min(state.currentScreenIndex, Math.max(0, newScreens.length - 1));
       return {
         ...state,
-        screens: state.screens.filter(screen => screen.id !== action.id),
-        currentScreenIndex: Math.max(0, state.currentScreenIndex - 1)
+        screens: newScreens, // Use the filtered list
+        currentScreenIndex: newIndex
       };
     case 'SET_CURRENT_SCREEN':
       return {
         ...state,
         currentScreenIndex: action.index
+      };
+    case 'SET_SCREENS':
+      return {
+        ...state,
+        screens: action.screens,
+        // Reset index if current index is out of bounds after loading
+        currentScreenIndex: Math.min(state.currentScreenIndex, Math.max(0, action.screens.length - 1))
       };
     default:
       return state;
@@ -64,9 +74,9 @@ export function ScreensProvider({ children }: { children: React.ReactNode }) {
   // Load screens on mount
   useEffect(() => {
     loadScreens().then(screens => {
-      screens.forEach(screen => {
-        dispatch({ type: 'ADD_SCREEN', screen });
-      });
+      if (screens && screens.length > 0) {
+          dispatch({ type: 'SET_SCREENS', screens });
+      }
     });
   }, []);
 

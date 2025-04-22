@@ -19,11 +19,19 @@ Tungsten is a remote control app for mobile devices. Its primary requirements ar
     actions and configuration imports.
 6.  **Responsive Layout:** The UI should adapt reasonably to both portrait and landscape
     orientations.
-7.  **Configurable Buttons:** The button width should conform to a 6-column grid, with
-    buttons being able to span as many of those columns as needed via the YAML `width`
-    parameter. When the columns have been exhausted, the buttons should wrap to the next
-    row.  Buttons also have a configurable height, which makes the whole row as tall as
-    the tallest button.
+7.  **Configurable Buttons:** The button width should conform to a **6-column grid** (within
+    the available space in portrait mode, or within *each* column in landscape mode).
+    Buttons can span multiple columns via the YAML `span` parameter (renamed from `width`
+    in earlier docs/code). When 6 columns are filled in a row, buttons wrap to the next
+    row. Buttons also have a configurable `height`, which makes the whole row as tall as
+    the tallest button in that row.
+8.  **Separators:** A button with an empty string (`""`) label spanning an entire row (i.e.,
+    `span: 6`) should be rendered as a separator (a horizontal line) instead of a button.
+9. **Landscape Mode Layout:** Landscape orientation should display **two vertical columns**
+   side-by-side. Each column acts as an independent **6-column grid area** for button
+   layout, following the rules in requirement #7. Items from the configuration fill the
+   left column first, then wrap to the top of the right column once the left column is
+   conceptually "full" (based on item count split).
 
 High-Level Overview
 -------------------

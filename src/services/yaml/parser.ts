@@ -21,12 +21,14 @@ export async function parseScreenConfig(url: string): Promise<Screen[]> {
 
       return {
         id: `${Date.now()}-${index}`,
-        title: data.title,
+        title: String(data.title ?? ''), // Ensure title is a string
         ui: data.ui.map((button: any) => ({
-          label: button.label,
-          span: Math.min(Math.max(button.span || 1, 1), 6),
-          height: button.height || 1, // Parse height, default to 1 if not provided
-          url: button.url
+          label: String(button.label ?? ''), // Ensure label is a string
+          // Ensure span is between 1 and 6, default to 1
+          span: Math.min(Math.max(parseInt(String(button.span), 10) || 1, 1), 6),
+          // Ensure height is at least 1, default to 1
+          height: Math.max(parseInt(String(button.height), 10) || 1, 1),
+          url: String(button.url ?? '') // Ensure url is always a string
         }))
       };
     });
