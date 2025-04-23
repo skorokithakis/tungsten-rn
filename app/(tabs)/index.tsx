@@ -59,6 +59,7 @@ const HomeScreen: React.FC = () => {
       await client.post(url);
       showToast("Action completed successfully", "success");
     } catch (error) {
+      // Keep the generic error log below
       showToast(
         error instanceof Error ? error.message : "Action failed",
         "error"
@@ -77,10 +78,14 @@ const HomeScreen: React.FC = () => {
   };
 
   const gesture = Gesture.Pan()
+    .activeOffsetX([-15, 15]) // Increase horizontal threshold
+    .failOffsetY([-15, 15])   // Increase vertical threshold
     .onUpdate((e) => {
+      // console.log(`[Gesture.Pan] onUpdate: translationX = ${e.translationX}`); // Keep commented out if needed later
       translateX.value = e.translationX;
     })
     .onEnd((e) => {
+      // console.log(`[Gesture.Pan] onEnd: Ended with translationX = ${e.translationX}, velocityX = ${e.velocityX}`); // Keep commented out if needed later
       // Reduce threshold in landscape mode
       const threshold = isLandscape ? width * 0.05 : width * 0.2; // 10% in landscape, 20% in portrait
       if (Math.abs(e.translationX) > threshold) {
@@ -147,26 +152,41 @@ const HomeScreen: React.FC = () => {
       // --- DEBUG LOGGING (More Verbose) ---
       // console.log(`Rendering Button: Label='${button.label}' (Type: ${typeof button.label}), Calculated Width=${buttonWidth}`); // Keep previous log
       // --- END DEBUG LOGGING ---
-      return (
-        <TouchableOpacity
-          key={`${screenId}-button-${index}`}
-          style={[
-            styles.button,
-            {
-              height: BASE_BUTTON_HEIGHT * (button.height || 1)
-            },
-            // Apply calculated width instead of flexBasis
-            { width: buttonWidth }
-           ]}
-          onPress={() => handleButtonPress(button.url)}
-        >
-          <ThemedText style={{ color: "#000000", textAlign: 'center' }}>
-            {button.label}
-          </ThemedText>
-        </TouchableOpacity>
-      );
-    }
-  };
+
+         // Define the tap gesture for the button
+         const tapGesture = Gesture.Tap()
+           .maxDuration(250) // Optional: Define max duration for a tap
+           .onEnd((_event, success) => {
+             // Check if the tap gesture completed successfully
+             if (success) {
+               // Run the original button press handler on the JS thread
+               runOnJS(handleButtonPress)(button.url);
+             }
+           });
+
+        return (
+         <GestureDetector gesture={tapGesture} key={`${screenId}-button-${index}`}>
+           {/* Use Animated.View as GestureDetector needs an Animated component */}
+           <Animated.View
+             style={[
+               styles.button,
+               {
+                 height: BASE_BUTTON_HEIGHT * (button.height || 1),
+                 width: buttonWidth, // Apply calculated width
+                 // Note: Visual feedback on press (like opacity) needs separate handling now
+                 // e.g., using useSharedValue and useAnimatedStyle within this component,
+                 // or by adding .onBegin/.onFinalize to the tapGesture to change style.
+               },
+             ]}
+           >
+             <ThemedText style={{ color: "#000000", textAlign: 'center' }}>
+               {button.label}
+             </ThemedText>
+           </Animated.View>
+         </GestureDetector>
+        );
+      }
+    };
 
 
   // Replace the existing renderScreen function with this:
