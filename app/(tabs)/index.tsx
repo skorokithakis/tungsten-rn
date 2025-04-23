@@ -26,10 +26,66 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming, // Ensure withTiming is imported
   runOnJS,
 } from "react-native-reanimated";
 
 const BASE_BUTTON_HEIGHT = 40; // Base height for a button with height: 1
+
+// Define the new ButtonComponent outside HomeScreen
+interface ButtonComponentProps {
+  button: Button; // Use the imported Button type
+  screenId: string;
+  index: number;
+  buttonWidth: number;
+  onPress: (url: string) => void; // Function to handle the press action
+}
+
+const ButtonComponent: React.FC<ButtonComponentProps> = ({ button, screenId, index, buttonWidth, onPress }) => {
+  // Hooks are now at the top level of ButtonComponent
+  const buttonOpacity = useSharedValue(1);
+
+  const tapGesture = Gesture.Tap()
+    .maxDuration(250)
+    .onBegin(() => {
+      // Decrease opacity when tap starts (duration 50ms)
+      buttonOpacity.value = withTiming(0.6, { duration: 50 });
+    })
+    .onEnd((_event, success) => {
+      // Check if the tap gesture completed successfully
+      if (success) {
+        // Run the original button press handler on the JS thread
+        runOnJS(onPress)(button.url); // Call the passed onPress function
+      }
+    })
+    .onFinalize(() => {
+      // Restore opacity when tap ends (duration 150ms)
+      buttonOpacity.value = withTiming(1, { duration: 150 });
+    });
+
+  // Animated style for opacity feedback
+  const buttonAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: buttonOpacity.value,
+  }));
+
+  return (
+    <GestureDetector gesture={tapGesture} key={`${screenId}-button-${index}`}>
+      {/* Use Animated.View as GestureDetector needs an Animated component */}
+      <Animated.View
+        style={[
+          styles.button, // Access styles defined at the bottom of the file
+          { height: BASE_BUTTON_HEIGHT * (button.height || 1), width: buttonWidth },
+          buttonAnimatedStyle, // Apply the animated opacity style
+        ]}
+      >
+        <ThemedText style={{ color: "#000000", textAlign: 'center' }}>
+          {button.label}
+        </ThemedText>
+      </Animated.View>
+    </GestureDetector>
+  );
+};
+
 
 const HomeScreen: React.FC = () => {
   const { width, height } = useWindowDimensions();
@@ -153,37 +209,16 @@ const HomeScreen: React.FC = () => {
       // console.log(`Rendering Button: Label='${button.label}' (Type: ${typeof button.label}), Calculated Width=${buttonWidth}`); // Keep previous log
       // --- END DEBUG LOGGING ---
 
-         // Define the tap gesture for the button
-         const tapGesture = Gesture.Tap()
-           .maxDuration(250) // Optional: Define max duration for a tap
-           .onEnd((_event, success) => {
-             // Check if the tap gesture completed successfully
-             if (success) {
-               // Run the original button press handler on the JS thread
-               runOnJS(handleButtonPress)(button.url);
-             }
-           });
-
+        // Render the dedicated ButtonComponent instead of inline logic
         return (
-         <GestureDetector gesture={tapGesture} key={`${screenId}-button-${index}`}>
-           {/* Use Animated.View as GestureDetector needs an Animated component */}
-           <Animated.View
-             style={[
-               styles.button,
-               {
-                 height: BASE_BUTTON_HEIGHT * (button.height || 1),
-                 width: buttonWidth, // Apply calculated width
-                 // Note: Visual feedback on press (like opacity) needs separate handling now
-                 // e.g., using useSharedValue and useAnimatedStyle within this component,
-                 // or by adding .onBegin/.onFinalize to the tapGesture to change style.
-               },
-             ]}
-           >
-             <ThemedText style={{ color: "#000000", textAlign: 'center' }}>
-               {button.label}
-             </ThemedText>
-           </Animated.View>
-         </GestureDetector>
+          <ButtonComponent
+            key={`${screenId}-button-${index}`} // Key for list rendering
+            button={button}
+            screenId={screenId}
+            index={index}
+            buttonWidth={buttonWidth}
+            onPress={handleButtonPress} // Pass the handler function
+          />
         );
       }
     };
