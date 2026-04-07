@@ -70,12 +70,14 @@ function withAndroidAutoManifest(config) {
     }
 
     // Add minCarAppApiLevel metadata
-    const apiLevelMetaExists = application["meta-data"].some(
+    const apiLevelMeta = application["meta-data"].find(
       (m) =>
         m.$["android:name"] === "androidx.car.app.minCarAppApiLevel"
     );
 
-    if (!apiLevelMetaExists) {
+    if (apiLevelMeta) {
+      apiLevelMeta.$["android:value"] = "1";
+    } else {
       application["meta-data"].push({
         $: {
           "android:name": "androidx.car.app.minCarAppApiLevel",
@@ -92,7 +94,13 @@ function withAndroidAutoBuildGradle(config) {
   return withAppBuildGradle(config, async (config) => {
     const gradle = config.modResults.contents;
 
-    if (!gradle.includes("androidx.car.app:app")) {
+    if (gradle.includes("androidx.car.app:app")) {
+      // Replace only the version portion so re-prebuild picks up version changes.
+      config.modResults.contents = gradle.replace(
+        /implementation\s+"androidx\.car\.app:app:[^"]+"/,
+        'implementation "androidx.car.app:app:1.7.0"'
+      );
+    } else {
       config.modResults.contents = gradle.replace(
         /dependencies\s*\{/,
         'dependencies {\n    implementation "androidx.car.app:app:1.7.0"'
