@@ -79,7 +79,7 @@ function withAndroidAutoManifest(config) {
       application["meta-data"].push({
         $: {
           "android:name": "androidx.car.app.minCarAppApiLevel",
-          "android:value": "6",
+          "android:value": "1",
         },
       });
     }
@@ -95,7 +95,7 @@ function withAndroidAutoBuildGradle(config) {
     if (!gradle.includes("androidx.car.app:app")) {
       config.modResults.contents = gradle.replace(
         /dependencies\s*\{/,
-        'dependencies {\n    implementation "androidx.car.app:app:1.4.0"'
+        'dependencies {\n    implementation "androidx.car.app:app:1.7.0"'
       );
     }
 
