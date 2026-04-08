@@ -5,7 +5,7 @@ import android.database.sqlite.SQLiteDatabase
 import org.json.JSONArray
 
 data class ScreenData(val id: String, val title: String, val ui: List<ButtonData>)
-data class ButtonData(val label: String, val span: Int, val url: String, val height: Int = 1)
+data class ButtonData(val label: String, val span: Int, val url: String, val height: Int = 1, val autoFavorite: Boolean = false)
 
 object CarDataStore {
     fun loadScreens(context: Context): List<ScreenData> {
@@ -50,7 +50,8 @@ object CarDataStore {
                         label = btnObj.optString("label", ""),
                         span = btnObj.optInt("span", 1),
                         url = btnObj.optString("url", ""),
-                        height = btnObj.optInt("height", 1)
+                        height = btnObj.optInt("height", 1),
+                        autoFavorite = btnObj.optBoolean("auto_favorite", false)
                     )
                 )
             }

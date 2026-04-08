@@ -7,6 +7,7 @@ export interface Button {
   // width: number; // Removed as it's not used and span dictates width percentage
   url: string;
   height?: number;
+  auto_favorite?: boolean;
 }
 
 export interface Screen {

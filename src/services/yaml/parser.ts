@@ -28,7 +28,9 @@ export async function parseScreenConfig(url: string): Promise<Screen[]> {
           span: Math.min(Math.max(parseInt(String(button.span), 10) || 1, 1), 6),
           // Ensure height is at least 1, default to 1
           height: Math.max(parseInt(String(button.height), 10) || 1, 1),
-          url: String(button.url ?? '') // Ensure url is always a string
+          url: String(button.url ?? ''), // Ensure url is always a string
+          // Only include auto_favorite when it is explicitly enabled.
+          ...(button.auto_favorite === true ? { auto_favorite: true } : {})
         }))
       };
     });

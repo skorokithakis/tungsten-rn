@@ -14,6 +14,49 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
     override fun onGetTemplate(): Template {
         val screens = CarDataStore.loadScreens(carContext)
 
+        val favorites = screens
+            .flatMap { it.ui }
+            .filter { it.autoFavorite && it.label.isNotBlank() }
+
+        if (favorites.isNotEmpty()) {
+            val listBuilder = ItemList.Builder()
+            for (button in favorites) {
+                listBuilder.addItem(
+                    Row.Builder()
+                        .setTitle(button.label)
+                        .setOnClickListener {
+                            CarActionExecutor.execute(carContext, button.url)
+                        }
+                        .build()
+                )
+            }
+            listBuilder.addItem(
+                Row.Builder()
+                    .setTitle("Browse all panes")
+                    .setBrowsable(true)
+                    .setOnClickListener {
+                        screenManager.push(ScreenListScreen(carContext))
+                    }
+                    .build()
+            )
+
+            return ListTemplate.Builder()
+                .setTitle("Tungsten")
+                .setHeaderAction(Action.APP_ICON)
+                .setActionStrip(
+                    ActionStrip.Builder()
+                        .addAction(
+                            Action.Builder()
+                                .setTitle("Refresh")
+                                .setOnClickListener { invalidate() }
+                                .build()
+                        )
+                        .build()
+                )
+                .setSingleList(listBuilder.build())
+                .build()
+        }
+
         if (screens.isEmpty()) {
             return MessageTemplate.Builder(
                 "No screens configured.\nAdd screens in the Tungsten app on your phone."

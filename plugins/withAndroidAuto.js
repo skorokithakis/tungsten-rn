@@ -12,6 +12,7 @@ const KOTLIN_FILES = [
   "TungstenSession.kt",
   "MainCarScreen.kt",
   "ButtonListScreen.kt",
+  "ScreenListScreen.kt",
   "CarDataStore.kt",
   "CarActionExecutor.kt",
 ];
