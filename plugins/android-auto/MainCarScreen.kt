@@ -4,6 +4,8 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
+import androidx.car.app.model.GridItem
+import androidx.car.app.model.GridTemplate
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.MessageTemplate
@@ -22,25 +24,17 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
             val listBuilder = ItemList.Builder()
             for (button in favorites) {
                 listBuilder.addItem(
-                    Row.Builder()
+                    GridItem.Builder()
                         .setTitle(button.label)
+                        .setImage(colorCircleIcon(button.label))
                         .setOnClickListener {
                             CarActionExecutor.execute(carContext, button.url)
                         }
                         .build()
                 )
             }
-            listBuilder.addItem(
-                Row.Builder()
-                    .setTitle("Browse all panes")
-                    .setBrowsable(true)
-                    .setOnClickListener {
-                        screenManager.push(ScreenListScreen(carContext))
-                    }
-                    .build()
-            )
 
-            return ListTemplate.Builder()
+            return GridTemplate.Builder()
                 .setTitle("Tungsten")
                 .setHeaderAction(Action.APP_ICON)
                 .setActionStrip(
@@ -49,6 +43,14 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
                             Action.Builder()
                                 .setTitle("Refresh")
                                 .setOnClickListener { invalidate() }
+                                .build()
+                        )
+                        .addAction(
+                            Action.Builder()
+                                .setTitle("Browse all panes")
+                                .setOnClickListener {
+                                    screenManager.push(ScreenListScreen(carContext))
+                                }
                                 .build()
                         )
                         .build()
@@ -111,8 +113,9 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
         for (button in screen.ui) {
             if (button.label.isBlank()) continue
             listBuilder.addItem(
-                Row.Builder()
+                GridItem.Builder()
                     .setTitle(button.label)
+                    .setImage(colorCircleIcon(button.label))
                     .setOnClickListener {
                         CarActionExecutor.execute(carContext, button.url)
                     }
@@ -134,7 +137,7 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
                 .build()
         }
 
-        return ListTemplate.Builder()
+        return GridTemplate.Builder()
             .setTitle(screen.title)
             .setHeaderAction(Action.APP_ICON)
             .setActionStrip(

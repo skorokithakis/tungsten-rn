@@ -15,6 +15,7 @@ const KOTLIN_FILES = [
   "ScreenListScreen.kt",
   "CarDataStore.kt",
   "CarActionExecutor.kt",
+  "ColorCircleIcon.kt",
 ];
 
 function withAndroidAutoManifest(config) {
