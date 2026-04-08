@@ -25,17 +25,17 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-## Releasing to internal testing
+## Releasing
 
-Build locally and submit the bundle to Google Play:
+Build and submit to Google Play with the `./build` script:
 
 ```bash
-npx eas build --platform android --profile production --local
-npx eas submit --platform android --profile internal --path <path-to-.aab>
+./build internal    # Submit to the internal testing track
+./build production  # Submit to the production track
 ```
 
-This uploads the `.aab` to the internal testing track on Google Play Console. To
-make it available to testers, go to the [Google Play
-Console](https://play.google.com/console), navigate to the app's **Internal
-testing** track under **Testing**, and promote the build by creating a new
+This builds a release `.aab` locally and uploads it to Google Play Console. To
+make it available to users, go to the [Google Play
+Console](https://play.google.com/console), navigate to the appropriate track
+under **Testing** or **Production**, and promote the build by creating a new
 release with the uploaded bundle.
