@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "tungsten",
+    "name": "Tungsten",
     "slug": "tungsten",
     "version": "1.0.0",
     "orientation": "default",
@@ -34,7 +34,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "./plugins/withAndroidAuto"
     ],
     "experiments": {
       "typedRoutes": true

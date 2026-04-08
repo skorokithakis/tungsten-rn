@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $(basename "$0") <submit-profile>" >&2
+    exit 1
+fi
+
+tempdir=$(mktemp -d)
+trap 'rm -rf "$tempdir"' EXIT
+
+npx eas build --platform android --profile production --local --output "$tempdir/app.aab"
+npx eas submit --platform android --profile "$1" --path "$tempdir/app.aab"
