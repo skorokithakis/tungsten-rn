@@ -69,10 +69,10 @@ function withAndroidAutoManifest(config) {
       });
     }
 
-    // Add minCarAppApiLevel metadata
+    // Add minCarApiLevel metadata
     const apiLevelMeta = application["meta-data"].find(
       (m) =>
-        m.$["android:name"] === "androidx.car.app.minCarAppApiLevel"
+        m.$["android:name"] === "androidx.car.app.minCarApiLevel"
     );
 
     if (apiLevelMeta) {
@@ -80,7 +80,7 @@ function withAndroidAutoManifest(config) {
     } else {
       application["meta-data"].push({
         $: {
-          "android:name": "androidx.car.app.minCarAppApiLevel",
+          "android:name": "androidx.car.app.minCarApiLevel",
           "android:value": "1",
         },
       });

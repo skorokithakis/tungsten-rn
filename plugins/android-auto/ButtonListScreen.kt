@@ -6,6 +6,7 @@ import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
+import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
 
@@ -27,6 +28,20 @@ class ButtonListScreen(
             )
         }
 
+        val itemList = listBuilder.build()
+        if (itemList.items.isEmpty()) {
+            return MessageTemplate.Builder("No buttons configured.")
+                .setTitle(screen.title)
+                .setHeaderAction(Action.BACK)
+                .addAction(
+                    Action.Builder()
+                        .setTitle("Refresh")
+                        .setOnClickListener { invalidate() }
+                        .build()
+                )
+                .build()
+        }
+
         return ListTemplate.Builder()
             .setTitle(screen.title)
             .setHeaderAction(Action.BACK)
@@ -40,7 +55,7 @@ class ButtonListScreen(
                     )
                     .build()
             )
-            .setSingleList(listBuilder.build())
+            .setSingleList(itemList)
             .build()
     }
 }

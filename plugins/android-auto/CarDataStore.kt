@@ -58,7 +58,7 @@ object CarDataStore {
             screens.add(
                 ScreenData(
                     id = obj.optString("id", ""),
-                    title = obj.optString("title", ""),
+                    title = obj.optString("title", "").ifBlank { "Untitled" },
                     ui = buttons
                 )
             )

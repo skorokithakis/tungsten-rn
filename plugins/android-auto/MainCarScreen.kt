@@ -77,6 +77,20 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
             )
         }
 
+        val itemList = listBuilder.build()
+        if (itemList.items.isEmpty()) {
+            return MessageTemplate.Builder("No buttons configured.")
+                .setTitle(screen.title)
+                .setHeaderAction(Action.APP_ICON)
+                .addAction(
+                    Action.Builder()
+                        .setTitle("Refresh")
+                        .setOnClickListener { invalidate() }
+                        .build()
+                )
+                .build()
+        }
+
         return ListTemplate.Builder()
             .setTitle(screen.title)
             .setHeaderAction(Action.APP_ICON)
@@ -90,7 +104,7 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
                     )
                     .build()
             )
-            .setSingleList(listBuilder.build())
+            .setSingleList(itemList)
             .build()
     }
 }
