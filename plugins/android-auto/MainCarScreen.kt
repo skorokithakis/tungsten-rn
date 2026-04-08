@@ -34,6 +34,16 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
                 )
             }
 
+            listBuilder.addItem(
+                GridItem.Builder()
+                    .setTitle("All panes")
+                    .setImage(colorCircleIcon("All panes"))
+                    .setOnClickListener {
+                        screenManager.push(ScreenListScreen(carContext))
+                    }
+                    .build()
+            )
+
             return GridTemplate.Builder()
                 .setTitle("Tungsten")
                 .setHeaderAction(Action.APP_ICON)
@@ -43,14 +53,6 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
                             Action.Builder()
                                 .setTitle("Refresh")
                                 .setOnClickListener { invalidate() }
-                                .build()
-                        )
-                        .addAction(
-                            Action.Builder()
-                                .setTitle("Browse all panes")
-                                .setOnClickListener {
-                                    screenManager.push(ScreenListScreen(carContext))
-                                }
                                 .build()
                         )
                         .build()
