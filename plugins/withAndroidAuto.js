@@ -44,7 +44,7 @@ function withAndroidAutoManifest(config) {
             ],
             category: [
               {
-                $: { "android:name": "androidx.car.app.category.POI" },
+                $: { "android:name": "androidx.car.app.category.IOT" },
               },
             ],
           },

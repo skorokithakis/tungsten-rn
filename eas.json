@@ -28,6 +28,12 @@
             "android": {
                 "releaseStatus": "draft"
             }
+        },
+        "internal": {
+            "android": {
+                "track": "internal",
+                "releaseStatus": "draft"
+            }
         }
     }
 }
