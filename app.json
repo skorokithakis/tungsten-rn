@@ -17,6 +17,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "targetSdkVersion": 35,
       "package": "io.stavros.tungstenrn"
     },
     "web": {
