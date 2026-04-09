@@ -23,6 +23,32 @@ private val PALETTE = intArrayOf(
 
 private const val BITMAP_SIZE = 128
 
+fun gridIcon(): CarIcon {
+    val bitmap = Bitmap.createBitmap(BITMAP_SIZE, BITMAP_SIZE, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFBDBDBD.toInt()
+        style = Paint.Style.FILL
+    }
+
+    // Each cell occupies roughly half the bitmap, with a gap between cells and a margin
+    // around the outside so the grid doesn't touch the icon edges.
+    val margin = BITMAP_SIZE * 0.08f
+    val gap = BITMAP_SIZE * 0.08f
+    val cellSize = (BITMAP_SIZE - 2 * margin - gap) / 2f
+    val cornerRadius = cellSize * 0.25f
+
+    for (row in 0..1) {
+        for (col in 0..1) {
+            val left = margin + col * (cellSize + gap)
+            val top = margin + row * (cellSize + gap)
+            canvas.drawRoundRect(left, top, left + cellSize, top + cellSize, cornerRadius, cornerRadius, paint)
+        }
+    }
+
+    return CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
+}
+
 fun colorCircleIcon(label: String): CarIcon {
     val color = PALETTE[(label.hashCode() and Int.MAX_VALUE) % PALETTE.size]
 

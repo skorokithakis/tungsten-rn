@@ -44,6 +44,7 @@ class ButtonListScreen(
         }
 
         return GridTemplate.Builder()
+            .setItemSize(GridTemplate.ITEM_SIZE_LARGE)
             .setTitle(screen.title)
             .setHeaderAction(Action.BACK)
             .setActionStrip(

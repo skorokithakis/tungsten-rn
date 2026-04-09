@@ -37,7 +37,7 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
             listBuilder.addItem(
                 GridItem.Builder()
                     .setTitle("All panes")
-                    .setImage(colorCircleIcon("All panes"))
+                    .setImage(gridIcon())
                     .setOnClickListener {
                         screenManager.push(ScreenListScreen(carContext))
                     }
@@ -45,6 +45,7 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
             )
 
             return GridTemplate.Builder()
+                .setItemSize(GridTemplate.ITEM_SIZE_LARGE)
                 .setTitle("Tungsten")
                 .setHeaderAction(Action.APP_ICON)
                 .setActionStrip(
@@ -140,6 +141,7 @@ class MainCarScreen(carContext: CarContext) : Screen(carContext) {
         }
 
         return GridTemplate.Builder()
+            .setItemSize(GridTemplate.ITEM_SIZE_LARGE)
             .setTitle(screen.title)
             .setHeaderAction(Action.APP_ICON)
             .setActionStrip(
